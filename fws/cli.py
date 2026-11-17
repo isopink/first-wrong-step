@@ -49,11 +49,64 @@ def cmd_run(a):
     out_dir.mkdir(parents=True, exist_ok=True)
     for ph in photos:
         print(f"{ph.name}")
-        r = process_sheet(ph, a.student, bank, llm, mapping, store.given(a.student))
+        r = process_sheet(ph, a.student, bank, llm, mapping, store.given(a.student), fewshot=a.fewshot, store=store)
         store.add_sheet(r)
         (out_dir / f"{r.sheet_id}.json").write_text(r.model_dump_json(indent=2), encoding="utf-8")
         auto = sum(p.route == "auto" for p in r.problems)
         print(f"  sheet {r.sheet_id}: {auto}/{len(r.problems)} auto, {r.usage['calls']} calls, ${r.usage['cost_usd']}, {r.seconds}s")
+
+
+def cmd_demo(a):
+    """Load the SAMPLE bank and sheets into data/demo and open the review queue. No API call."""
+    import time
+    import uuid
+
+    from .bank import Bank
+    from .images import sha256
+    from .models import Diagnosis, ProblemResult, SheetResult, TranscribedProblem
+    from .pipeline import route
+    from .recommend import recommend
+    from .review import serve
+    from .store import Store
+    from .verify import answers_match, check_steps
+
+    root = Path(__file__).parent.parent / "samples"
+    demo = DATA / "demo"
+    if demo.exists() and a.reset:
+        import shutil
+
+        shutil.rmtree(demo)
+    bank = Bank(demo / "bank.jsonl")
+    for line in (root / "bank.sample.jsonl").read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            from .models import BankItem
+
+            it = BankItem.model_validate_json(line)
+            bank.items[it.item_id] = it
+    bank.save()
+    store = Store(demo / "fws.sqlite")
+    if not store.sheets():
+        for k, s in enumerate(json.loads((root / "demo" / "sheets.json").read_text(encoding="utf-8")), 1):
+            tp = TranscribedProblem(**s["transcription"])
+            diag = Diagnosis(**s["diagnosis"])
+            item = bank.get(s["item_id"])
+            checks = check_steps(tp.steps)
+            key = answers_match(tp.final_answer, item.answer)
+            reasons = route(tp, checks, diag, key, item)
+            student = f"sample-{(k + 1) // 2:02d}"
+            recs = recommend(bank, diag, item, store.given(student))
+            photo = root / s["image"]
+            store.add_sheet(SheetResult(
+                sheet_id=f"demo-{k:02d}-{uuid.uuid4().hex[:4]}", student=student, image_path=str(photo.resolve()),
+                image_sha256=sha256(photo), model="SAMPLE (hand-written diagnosis, no model call)",
+                problems=[ProblemResult(label=tp.label, bank_item_id=item.item_id, transcription=tp, checks=checks,
+                                        answer_matches_key=key, diagnosis=diag, route="review" if reasons else "auto",
+                                        route_reasons=reasons, recommendations=recs)],
+                page_notes="", usage={"calls": 0, "cost_usd": 0.0}, seconds=0.0))
+            time.sleep(0.01)
+    print(f"demo data in {demo}")
+    if not a.no_serve:
+        serve(store, bank, a.port)
 
 
 def cmd_review(a):
@@ -78,7 +131,11 @@ def cmd_report(a):
 def cmd_eval(a):
     from .evaluate import from_reviews, run_labels
 
-    res = from_reviews(_store()) if a.from_reviews else run_labels(Path(a.labels), _bank(), a.model)
+    if a.from_reviews:
+        res = from_reviews(_store())
+    else:
+        modes = ["off", "static", "teacher"] if a.fewshot == "all" else [a.fewshot]
+        res = {m: run_labels(Path(a.labels), _bank(), a.model, m, _store()) for m in modes}
     print(json.dumps(res, ensure_ascii=False, indent=2))
     if a.out:
         Path(a.out).write_text(json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -105,11 +162,18 @@ def main(argv=None):
     r.add_argument("--photos", required=True)
     r.add_argument("--map", nargs="*", help="problem label to bank item, e.g. 21=2025-11-csat-common-21")
     r.add_argument("--model", default=DEFAULT_MODEL)
+    r.add_argument("--fewshot", choices=["off", "static", "teacher"], default="teacher")
     r.set_defaults(fn=cmd_run)
 
     v = sub.add_parser("review", help="open the teacher review queue")
     v.add_argument("--port", type=int, default=8765)
     v.set_defaults(fn=cmd_review)
+
+    d = sub.add_parser("demo", help="open the review queue on the SAMPLE data, no API key needed")
+    d.add_argument("--port", type=int, default=8765)
+    d.add_argument("--reset", action="store_true")
+    d.add_argument("--no-serve", action="store_true")
+    d.set_defaults(fn=cmd_demo)
 
     p = sub.add_parser("report", help="write the student report for one sheet")
     p.add_argument("--sheet", required=True)
@@ -119,6 +183,8 @@ def main(argv=None):
     e.add_argument("--labels", default="eval/labels.jsonl")
     e.add_argument("--from-reviews", action="store_true")
     e.add_argument("--model", default=DEFAULT_MODEL)
+    e.add_argument("--fewshot", choices=["off", "static", "teacher", "all"], default="all",
+                   help="all runs off, static and teacher on the same labels for comparison")
     e.add_argument("--out")
     e.set_defaults(fn=cmd_eval)
 

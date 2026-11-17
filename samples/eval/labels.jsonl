@@ -1,0 +1,6 @@
+{"image": "sheet-01.png", "map": {"1": "sample-11"}, "problems": {"1": {"first_wrong_step": 6, "error_type": "condition"}}}
+{"image": "sheet-02.png", "map": {"1": "sample-08"}, "problems": {"1": {"first_wrong_step": 4, "error_type": "arithmetic"}}}
+{"image": "sheet-03.png", "map": {"1": "sample-06"}, "problems": {"1": {"first_wrong_step": 2, "error_type": "concept"}}}
+{"image": "sheet-04.png", "map": {"1": "sample-09"}, "problems": {"1": {"first_wrong_step": null, "error_type": null}}}
+{"image": "sheet-05.png", "map": {"1": "sample-03"}, "problems": {"1": {"first_wrong_step": 2, "error_type": "algebra"}}}
+{"image": "sheet-06.png", "map": {"1": "sample-02"}, "problems": {"1": {"first_wrong_step": 4, "error_type": "concept"}}}

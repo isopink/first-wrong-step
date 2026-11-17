@@ -99,6 +99,26 @@ class Store:
                 "errors": dict(sorted(errors.items(), key=lambda kv: -kv[1])),
                 "skills": dict(sorted(skills.items(), key=lambda kv: -kv[1]))}
 
+    def corrections(self, skills: list[str], k: int = 3) -> list[dict]:
+        """Approved reviews where the teacher changed the verdict, the line or the error type,
+        most skill overlap first, then newest. Used as few-shot examples."""
+        rows = self.db.execute("select sheet_id, idx, original_json, final_json, decided from reviews "
+                               "where status='approved' order by decided desc").fetchall()
+        want = set(skills)
+        found = []
+        for r in rows:
+            o, f = json.loads(r["original_json"]), json.loads(r["final_json"])
+            if all(o[x] == f[x] for x in ("is_correct", "first_wrong_step", "error_type")):
+                continue
+            sheet = self.sheet(r["sheet_id"])
+            if not sheet or r["idx"] >= len(sheet.problems):
+                continue
+            steps = [s.model_dump() for s in sheet.problems[r["idx"]].transcription.steps]
+            overlap = len(want & set(f["skill_tags"]))
+            found.append((overlap, r["decided"], {"steps": steps, "model": o, "teacher": f}))
+        found.sort(key=lambda t: (-t[0], -t[1]))
+        return [c for _, _, c in found[:k]]
+
     def review_edits(self) -> list[tuple[dict, dict]]:
         rows = self.db.execute("select original_json, final_json from reviews where status='approved'")
         return [(json.loads(o), json.loads(f)) for o, f in rows]

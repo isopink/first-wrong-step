@@ -78,3 +78,12 @@ def test_end_to_end(tmp_path):
     final = store.final_diagnoses(r.sheet_id)[0]
     assert final.first_wrong_step == 1 and final.error_type == "concept" and final.feedback == "new"
     assert store.profile("s01")["errors"] == {"concept": 1}
+
+    # The teacher's correction comes back as a few-shot example on the next sheet with the same skill.
+    assert store.corrections(["지수와 로그의 성질"])[0]["teacher"]["error_type"] == "concept"
+    process_sheet(photo, "s02", bank, llm, {"1": "t-1"}, set(), log=lambda *_: None, fewshot="teacher", store=store)
+    last = fake.calls[-1]
+    assert "Worked examples" in last["system"][0]["text"]
+    assert any("Teacher corrected to" in c.get("text", "") for c in last["messages"][0]["content"])
+    process_sheet(photo, "s03", bank, llm, {"1": "t-1"}, set(), log=lambda *_: None, fewshot="off", store=store)
+    assert "Worked examples" not in fake.calls[-1]["system"][0]["text"]

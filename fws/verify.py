@@ -3,6 +3,7 @@
 What it can say, line by line:
 - a chain written as one line (a = b = c) holds or does not hold as an identity or as arithmetic
 - an equation keeps or changes its solution set from the previous equation line
+- a list of roots (x = 4, -2) matches or differs from the previous equation's roots
 - the final answer equals or differs from the answer key
 
 Anything it cannot parse is reported as "unparsed", never guessed. The diagnosis
@@ -27,6 +28,7 @@ _REPLACE = [
     (r"\cdot", r"\times "), (r"\,", " "), (r"\;", " "), (r"\!", ""), (r"\quad", " "),
     (r"\qquad", " "), (r"\therefore", ""), (r"\because", ""), (r"\displaystyle", ""),
 ]
+_NOT_CHECKED = ("<", ">", r"\le", r"\ge", r"\ne", r"\Rightarrow", r"\iff")
 
 
 def _clean(latex: str) -> str:
@@ -38,30 +40,42 @@ def _clean(latex: str) -> str:
 
 
 def parse(latex: str):
-    """LaTeX to a SymPy expression, or None."""
+    """LaTeX to a SymPy expression, or None. Decimals become exact fractions."""
     s = _clean(latex)
-    if not s or len(s) > MAX_LATEX:
+    if not s or len(s) > MAX_LATEX or "," in s:
         return None
     try:
         from sympy.parsing.latex import parse_latex
 
-        return parse_latex(s)
+        e = parse_latex(s)
     except Exception:
-        pass
-    try:  # plain answers like 12, -3/4, 2*sqrt(3)
-        return sp.sympify(s.replace("^", "**"), evaluate=True)
-    except Exception:
+        try:  # plain answers like 12, -3/4, 2*sqrt(3)
+            e = sp.sympify(s.replace("^", "**"), evaluate=True)
+        except Exception:
+            return None
+    if not isinstance(e, sp.Expr):
         return None
+    if e.has(sp.Float):
+        e = sp.nsimplify(e, rational=True)
+    return e
+
+
+def _is_name(e) -> bool:
+    """A bare symbol or a function value like f(3) or P(A): a name being assigned."""
+    return isinstance(e, (sp.Symbol, sp.core.function.AppliedUndef))
+
+
+def _compound(e) -> bool:
+    return not (_is_name(e) or e.is_Number)
 
 
 def _same_value(a, b, trials: int = 4) -> bool | None:
     """True if a and b agree as functions (checked at random points), None if unknown."""
     try:
-        diff = sp.nsimplify(a - b) if not (a - b).free_symbols else a - b
+        diff = a - b
         syms = sorted(diff.free_symbols, key=str)
         if not syms:
-            v = complex(sp.N(diff))
-            return abs(v) < 1e-9
+            return abs(complex(sp.N(diff))) < 1e-9
         rng = random.Random(7)
         seen = 0
         for _ in range(trials * 3):
@@ -94,76 +108,95 @@ def _solutions(lhs, rhs):
         return None
 
 
+def _value_list(text: str):
+    """'4, -2' or '4 or -2' or '4 또는 -2' to a FiniteSet of numbers, else None."""
+    parts = [p for p in re.split(r",|\bor\b|또는", _clean(text)) if p.strip()]
+    if len(parts) < 2:
+        return None
+    vals = [parse(p) for p in parts]
+    if any(v is None or v.free_symbols for v in vals):
+        return None
+    return sp.FiniteSet(*vals)
+
+
+def _check_line(st: Step, prev_solutions):
+    """(status, detail, solutions to carry to the next line)."""
+    if st.crossed_out:
+        return "skipped", "crossed out", prev_solutions
+    if not st.latex.strip() or st.legibility == "illegible":
+        return "skipped", "no math or illegible", prev_solutions
+    if any(op in st.latex for op in _NOT_CHECKED):
+        return "unparsed", "inequality or implication not checked", None
+    pieces = [p.strip() for p in _REL_SPLIT.split(_clean(st.latex)) if p.strip()]
+
+    # "x = 4, -2": roots listed, compared with the previous equation's roots.
+    if len(pieces) == 2:
+        head = parse(pieces[0])
+        vals = _value_list(pieces[1])
+        if head is not None and _is_name(head) and vals is not None:
+            if prev_solutions is not None and vals != prev_solutions:
+                return "broken", f"roots listed {sp.sstr(vals)} differ from the previous equation's {sp.sstr(prev_solutions)}", vals
+            return "ok", f"roots {sp.sstr(vals)}", vals
+
+    exprs = [parse(p) for p in pieces]
+    # A leading name (f(3) = ..., P(A|B) = ..., a_1 = ...) is being assigned; check the rest of the chain.
+    lead = len(exprs) >= 3 and (exprs[0] is None or _is_name(exprs[0]))
+    if lead:
+        pieces, exprs = pieces[1:], exprs[1:]
+    if len(exprs) < 2 or any(e is None for e in exprs):
+        return "unparsed", "could not parse", prev_solutions
+
+    links = [_same_value(exprs[i], exprs[i + 1]) for i in range(len(exprs) - 1)]
+    if all(l is True for l in links):
+        return "ok", "each '=' holds" + (" after the assigned name" if lead else ""), prev_solutions
+    if False in links:
+        bad = links.index(False)
+        a, b = exprs[bad], exprs[bad + 1]
+        if not (a - b).free_symbols:
+            return "broken", f"arithmetic: {pieces[bad]} is not equal to {pieces[bad + 1]}", prev_solutions
+        if len(exprs) > 2 or lead:
+            return "broken", f"{pieces[bad]} = {pieces[bad + 1]} does not hold for all values", prev_solutions
+
+    if len(exprs) == 2:  # an equation with symbols: compare its roots with the previous one
+        sols = _solutions(exprs[0], exprs[1])
+        if sols is not None:
+            if prev_solutions is not None and sols != prev_solutions:
+                return "broken", f"solution set changed from {sp.sstr(prev_solutions)} to {sp.sstr(sols)}", sols
+            return "ok", f"equation, solutions {sp.sstr(sols)}", sols
+        if _compound(exprs[0]) and _compound(exprs[1]):
+            return "suspect", f"{pieces[0]} = {pieces[1]} is not an identity; fine only if it is an equation or a given condition", None
+        return "unparsed", "equation in several unknowns, not checked", None
+    return "unparsed", "chain not checked", prev_solutions
+
+
 def check_steps(steps: list[Step]) -> list[StepCheck]:
     out: list[StepCheck] = []
-    prev_solutions = None
+    prev = None
     for st in steps:
-        if st.crossed_out:
-            out.append(StepCheck(n=st.n, status="skipped", detail="crossed out"))
-            continue
-        if not st.latex.strip() or st.legibility == "illegible":
-            out.append(StepCheck(n=st.n, status="skipped", detail="no math or illegible"))
-            continue
-        pieces = [p for p in _REL_SPLIT.split(_clean(st.latex)) if p.strip()]
-        if any(op in st.latex for op in ("<", ">", r"\le", r"\ge", r"\ne", r"\Rightarrow", r"\iff")):
-            out.append(StepCheck(n=st.n, status="unparsed", detail="inequality or implication not checked"))
-            prev_solutions = None
-            continue
-        exprs = [parse(p) for p in pieces]
-        if len(exprs) < 2 or any(e is None for e in exprs):
-            out.append(StepCheck(n=st.n, status="unparsed", detail="could not parse"))
-            continue
-
-        # 1) Is every link of the chain an identity (or exact arithmetic)?
-        links = [_same_value(exprs[i], exprs[i + 1]) for i in range(len(exprs) - 1)]
-        if all(l is True for l in links):
-            out.append(StepCheck(n=st.n, status="ok", detail="each '=' holds as an identity"))
-            continue
-        no_symbols = all(not e.free_symbols for e in exprs)
-        if no_symbols and any(l is False for l in links):
-            bad = links.index(False)
-            out.append(StepCheck(n=st.n, status="broken",
-                                 detail=f"arithmetic: {pieces[bad].strip()} is not equal to {pieces[bad + 1].strip()}"))
-            continue
-
-        # 2) Otherwise treat a two-sided line as an equation and compare its roots with the previous one.
-        if len(exprs) == 2:
-            sols = _solutions(exprs[0], exprs[1])
-            if sols is None:
-                if links[0] is False:
-                    detail = f"{pieces[0].strip()} = {pieces[1].strip()} is not an identity; fine only if it is an equation or a given condition"
-                    out.append(StepCheck(n=st.n, status="suspect", detail=detail))
-                else:
-                    out.append(StepCheck(n=st.n, status="unparsed", detail="equation not solvable in one variable"))
-                prev_solutions = None
-                continue
-            if prev_solutions is not None and sols != prev_solutions:
-                out.append(StepCheck(n=st.n, status="broken",
-                                     detail=f"solution set changed from {sp.sstr(prev_solutions)} to {sp.sstr(sols)}"))
-            else:
-                out.append(StepCheck(n=st.n, status="ok", detail=f"equation, solutions {sp.sstr(sols)}"))
-            prev_solutions = sols
-            continue
-        if any(l is False for l in links):
-            bad = links.index(False)
-            out.append(StepCheck(n=st.n, status="suspect",
-                                 detail=f"{pieces[bad].strip()} = {pieces[bad + 1].strip()} is not an identity; fine only if it is an equation or a given condition"))
-            continue
-        out.append(StepCheck(n=st.n, status="unparsed", detail="chain is neither identity nor single equation"))
+        status, detail, prev = _check_line(st, prev)
+        out.append(StepCheck(n=st.n, status=status, detail=detail))
     return out
 
 
 def answers_match(student: str | None, key: str | None) -> bool | None:
     if not student or not key:
         return None
-    a, b = _clean(student), _clean(key)
     circled = "①②③④⑤"
-    a = str(circled.index(a) + 1) if a in circled else a
-    b = str(circled.index(b) + 1) if b in circled else b
+
+    def norm(t: str) -> str:
+        t = _clean(t)
+        return str(circled.index(t) + 1) if t in circled else t
+
+    a, b = norm(student), norm(key)
     if a.replace(" ", "") == b.replace(" ", ""):
         return True
+    la, lb = _value_list(a), _value_list(b)
+    if la is not None or lb is not None:  # several answers must match as a set
+        ea, eb = parse(a), parse(b)
+        sa = la if la is not None else (sp.FiniteSet(ea) if ea is not None else None)
+        sb = lb if lb is not None else (sp.FiniteSet(eb) if eb is not None else None)
+        return None if sa is None or sb is None else sa == sb
     ea, eb = parse(a), parse(b)
     if ea is None or eb is None:
         return None
-    same = _same_value(ea, eb)
-    return same
+    return _same_value(ea, eb)

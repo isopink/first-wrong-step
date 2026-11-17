@@ -1,0 +1,343 @@
+[
+  {
+    "image": "eval/sheet-01.png",
+    "item_id": "sample-11",
+    "transcription": {
+      "label": "1",
+      "source_hint": null,
+      "final_answer": "4, -2",
+      "steps": [
+        {
+          "n": 1,
+          "latex": "\\log_2 x+\\log_2(x-2)=3",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 2,
+          "latex": "\\log_2 x(x-2)=3",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 3,
+          "latex": "x(x-2)=8",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 4,
+          "latex": "x^2-2x-8=0",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 5,
+          "latex": "(x-4)(x+2)=0",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 6,
+          "latex": "x=4, -2",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        }
+      ]
+    },
+    "diagnosis": {
+      "is_correct": false,
+      "first_wrong_step": 6,
+      "error_type": "condition",
+      "what_went_wrong": "6번째 줄에서 진수 조건 x>2를 확인하지 않아 x=-2를 해로 남겼어요.",
+      "corrected_line": "x>2 \\text{ 이므로 } x=4",
+      "feedback": "3번째 줄까지 로그의 합을 곱의 로그로 묶고 지수로 바꾼 과정은 정확해요. 6번째 줄에서 x=-2를 해로 남긴 게 문제예요. 로그방정식은 식을 풀기 전에 진수 조건부터 적어야 해요. 이 문제는 x>0과 x-2>0을 함께 만족해야 하니 범위가 x>2예요. 이 범위로 5번째 줄의 두 근을 다시 걸러 보세요.",
+      "habit": "로그가 보이면 첫 줄에 진수 조건을 먼저 적고, 마지막 줄에서 그 조건으로 근을 거른다.",
+      "skill_tags": [
+        "로그방정식과 부등식"
+      ],
+      "confidence": 0.93
+    }
+  },
+  {
+    "image": "eval/sheet-02.png",
+    "item_id": "sample-08",
+    "transcription": {
+      "label": "1",
+      "source_hint": null,
+      "final_answer": "7",
+      "steps": [
+        {
+          "n": 1,
+          "latex": "f'(x)=3x^2-12x+9",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 2,
+          "latex": "f'(x)=3(x-1)(x-3)",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 3,
+          "latex": "f(1)=1-6+9+1=5",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 4,
+          "latex": "f(3)=27-54+27+1=2",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 5,
+          "latex": "5+2=7",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        }
+      ]
+    },
+    "diagnosis": {
+      "is_correct": false,
+      "first_wrong_step": 4,
+      "error_type": "arithmetic",
+      "what_went_wrong": "4번째 줄의 계산 27-54+27+1은 1인데 2로 적었어요.",
+      "corrected_line": "f(3)=27-54+27+1=1",
+      "feedback": "도함수를 인수분해해서 x=1에서 극대, x=3에서 극소인 것을 찾은 흐름은 맞아요. 4번째 줄에서 f(3)을 계산할 때 27-54+27+1을 2로 적었는데, 실제 값은 1이에요. 개념이 아니라 계산에서 점수가 빠진 경우예요. 극값을 대입할 때는 항을 두 개씩 묶어 계산하면 실수가 줄어요.",
+      "habit": "함숫값을 대입한 줄은 항을 두 개씩 묶어 한 번 더 계산한다.",
+      "skill_tags": [
+        "극대와 극소"
+      ],
+      "confidence": 0.97
+    }
+  },
+  {
+    "image": "eval/sheet-03.png",
+    "item_id": "sample-06",
+    "transcription": {
+      "label": "1",
+      "source_hint": null,
+      "final_answer": "④",
+      "steps": [
+        {
+          "n": 1,
+          "latex": "P(A\\cap B)=0.4\\times 0.5=0.2",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 2,
+          "latex": "P(A^c\\cap B)=0.4\\times 0.25=0.1",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 3,
+          "latex": "P(B)=0.2+0.1=0.3",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 4,
+          "latex": "P(A|B)=\\frac{0.2}{0.3}=\\frac{2}{3}",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        }
+      ]
+    },
+    "diagnosis": {
+      "is_correct": false,
+      "first_wrong_step": 2,
+      "error_type": "concept",
+      "what_went_wrong": "2번째 줄에서 P(A^C∩B)를 구할 때 P(A^C)=0.6 대신 P(A)=0.4를 곱했어요.",
+      "corrected_line": "P(A^C\\cap B)=0.6\\times 0.25=0.15",
+      "feedback": "1번째 줄에서 곱셈정리로 P(A∩B)를 구한 것은 맞아요. 2번째 줄에서 P(A^C∩B)=P(A^C)P(B|A^C)인데, P(A^C)가 아니라 P(A)를 곱했어요. 조건부확률의 곱셈정리에서는 조건이 되는 사건의 확률을 곱해야 해요. 2번째 줄을 고치면 P(B)부터 다시 정해지니 3번째 줄부터 다시 풀어 보세요.",
+      "habit": "곱셈정리를 쓸 때 P(B|X) 옆에 곱하는 확률이 같은 X인지 확인한다.",
+      "skill_tags": [
+        "조건부확률"
+      ],
+      "confidence": 0.9
+    }
+  },
+  {
+    "image": "eval/sheet-04.png",
+    "item_id": "sample-09",
+    "transcription": {
+      "label": "1",
+      "source_hint": null,
+      "final_answer": "3",
+      "steps": [
+        {
+          "n": 1,
+          "latex": "f'(x)=3x^2+2ax+b",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 2,
+          "latex": "3(x-1)(x-3)=3x^2-12x+9",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 3,
+          "latex": "2a=-12",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 4,
+          "latex": "a=-6",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 5,
+          "latex": "a+b=3",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        }
+      ]
+    },
+    "diagnosis": {
+      "is_correct": true,
+      "first_wrong_step": null,
+      "error_type": null,
+      "what_went_wrong": "",
+      "corrected_line": "",
+      "feedback": "극값을 갖는 두 x값이 도함수의 두 근이라는 점을 바로 써서 f'(x)=3(x-1)(x-3)으로 놓은 게 이 풀이의 핵심이에요. 계수를 비교해서 a와 b를 구한 과정도 정확해요. 다만 극값을 가지려면 그 점에서 f'(x)의 부호가 바뀌어야 하는데, 서로 다른 두 근이라 부호가 바뀐다는 한 줄을 덧붙이면 서술형에서도 감점이 없어요.",
+      "habit": "도함수의 근으로 극값을 잡을 때 부호가 바뀌는지 한 줄 적는다.",
+      "skill_tags": [
+        "극대와 극소"
+      ],
+      "confidence": 0.95
+    }
+  },
+  {
+    "image": "eval/sheet-05.png",
+    "item_id": "sample-03",
+    "transcription": {
+      "label": "1",
+      "source_hint": null,
+      "final_answer": "13.5",
+      "steps": [
+        {
+          "n": 1,
+          "latex": "S_{10}=\\frac{10(a_1+a_{10})}{2}",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 2,
+          "latex": "145=10(1+a_{10})",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 3,
+          "latex": "1+a_{10}=14.5",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 4,
+          "latex": "a_{10}=13.5",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        }
+      ]
+    },
+    "diagnosis": {
+      "is_correct": false,
+      "first_wrong_step": 2,
+      "error_type": "algebra",
+      "what_went_wrong": "2번째 줄에서 분모 2를 빠뜨려 145=5(1+a10)이 아니라 145=10(1+a10)으로 적었어요.",
+      "corrected_line": "145=5(1+a_{10})",
+      "feedback": "등차수열의 합을 첫째항과 끝항으로 나타낸 1번째 줄은 맞아요. 2번째 줄로 옮길 때 분모 2가 사라졌어요. 식을 대입하면서 분수를 정리할 때 흔히 생기는 식 변형 실수예요. 답이 정수가 아니게 나온 것도 신호였어요. 2번째 줄을 고쳐서 다시 풀어 보세요.",
+      "habit": "단답형에서 답이 정수가 아니면 바로 앞 두 줄의 식 변형을 다시 본다.",
+      "skill_tags": [
+        "수열의 합과 시그마",
+        "등차수열"
+      ],
+      "confidence": 0.92
+    }
+  },
+  {
+    "image": "eval/sheet-06.png",
+    "item_id": "sample-02",
+    "transcription": {
+      "label": "1",
+      "source_hint": null,
+      "final_answer": "31",
+      "steps": [
+        {
+          "n": 1,
+          "latex": "4d=12",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 2,
+          "latex": "d=3",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 3,
+          "latex": "a_1=7-2\\times 3=1",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        },
+        {
+          "n": 4,
+          "latex": "a_{10}=1+10\\times 3=31",
+          "text": "",
+          "legibility": "clear",
+          "crossed_out": false
+        }
+      ]
+    },
+    "diagnosis": {
+      "is_correct": false,
+      "first_wrong_step": 4,
+      "error_type": "concept",
+      "what_went_wrong": "4번째 줄에서 일반항을 a1+(n-1)d가 아니라 a1+nd로 써서 10d를 더했어요.",
+      "corrected_line": "a_{10}=a_1+9d=1+27=28",
+      "feedback": "두 항의 차로 공차를 구하고 a1을 거꾸로 구한 3번째 줄까지는 정확해요. 4번째 줄에서 a10을 a1+10d로 적었어요. 등차수열의 일반항은 a_n=a1+(n-1)d라서 제10항까지는 공차를 9번 더해요. 3번째 줄에서는 2d를 맞게 뺐으니, 같은 원리로 4번째 줄을 다시 써 보세요.",
+      "habit": "일반항을 쓸 때 n=1을 넣어 a1이 나오는지 확인한다.",
+      "skill_tags": [
+        "등차수열"
+      ],
+      "confidence": 0.88
+    }
+  }
+]

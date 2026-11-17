@@ -29,7 +29,7 @@ def _page(title: str, body: str) -> bytes:
     return (f"<!doctype html><html lang=ko><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
             f"<title>{escape(title)}</title><style>{CSS} .grid{{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}}"
             f"main{{max-width:1280px}} img{{width:100%;border:1px solid var(--line)}} textarea,input,select{{width:100%;font:inherit;"
-            f"background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:6px}} code{{white-space:pre-wrap}}"
+            f"background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:6px}} code{{white-space:pre-wrap;font-family:Consolas,monospace}}"
             f".broken{{font-weight:700}} button{{font:inherit;padding:6px 16px;margin-top:8px}}"
             f"@media(max-width:800px){{.grid{{grid-template-columns:1fr}}}}</style></head><body><main>{body}</main></body></html>").encode()
 
@@ -102,7 +102,9 @@ Marked answer: {escape(p.transcription.final_answer or 'none')}, matches key: {p
 <label>Habit <input name=habit value='{escape(d.habit)}'></label>
 <label>Note (not sent) <input name=note></label>
 <button>Approve</button></form></section>""")
-            body = (f"<p><a href='/'>Queue</a> <a href='/report/{sid}'>Student report</a></p><h1>{escape(r.student)} {escape(sid)}</h1>"
+            banner = ("<p class=meta><b>SAMPLE data.</b> Problems, sheet and diagnosis are written for this repo; "
+                      "the checker, routing and recommendations ran for real.</p>") if r.model.startswith("SAMPLE") else ""
+            body = (f"{banner}<p><a href='/'>Queue</a> <a href='/report/{sid}'>Student report</a></p><h1>{escape(r.student)} {escape(sid)}</h1>"
                     f"<p class=meta>{escape(r.page_notes)} {r.usage.get('calls')} calls, ${r.usage.get('cost_usd')}, {r.seconds}s</p>"
                     f"<div class=grid><div><img src='/image/{sid}' alt='Student photo'></div><div>{''.join(blocks)}</div></div>")
             return _page(f"Review {sid}", body)

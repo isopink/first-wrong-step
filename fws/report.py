@@ -61,5 +61,5 @@ def render_sheet(r: SheetResult, store: Store, bank: Bank) -> str:
 <link rel=stylesheet href="{KATEX}/katex.min.css">
 <script defer src="{KATEX}/katex.min.js"></script>
 <script defer src="{KATEX}/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{{delimiters:[{{left:'$$',right:'$$',display:true}},{{left:'$',right:'$',display:false}}]}})"></script>
-</head><body><main><h1>{escape(r.student)} 풀이 첨삭</h1><div class=meta>{escape(r.sheet_id)}</div>
+</head><body><main><h1>{escape(r.student)} 풀이 첨삭</h1><div class=meta>{escape(r.sheet_id)}{', SAMPLE data, not a real student' if r.model.startswith('SAMPLE') else ''}</div>
 {''.join(parts)}{profile}{ans}</main></body></html>"""

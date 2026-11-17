@@ -13,6 +13,7 @@ from pathlib import Path
 
 from . import images
 from .bank import Bank
+from .fewshot import FewShot, static_block, teacher_block
 from .llm import LLM, Usage, image_block
 from .models import BankItem, Diagnosis, ProblemResult, SheetResult, StepCheck, TranscribedProblem, Transcription
 from .recommend import recommend
@@ -115,7 +116,10 @@ def route(tp: TranscribedProblem, checks: list[StepCheck], diag: Diagnosis, key_
 
 
 def process_sheet(photo: Path, student: str, bank: Bank, llm: LLM, mapping: dict[str, str] | None = None,
-                  already_given: set[str] | None = None, log=print) -> SheetResult:
+                  already_given: set[str] | None = None, log=print, fewshot: FewShot = "teacher",
+                  store=None) -> SheetResult:
+    """fewshot: "off" no examples, "static" the worked examples, "teacher" those plus the
+    teacher's past corrections on the same skills (needs `store`)."""
     t0 = time.perf_counter()
     mapping = mapping or {}
     given = set(already_given or ())
@@ -137,7 +141,10 @@ def process_sheet(photo: Path, student: str, bank: Bank, llm: LLM, mapping: dict
             {"type": "text", "text": f"{_problem_context(item)}\n\nKey check of the marked answer: {key_match}\n\n"
                                      f"Student lines for problem {tp.label}:\n{_lines(tp, checks)}"},
         ]
-        diag = llm.structured(DIAGNOSE_SYSTEM, content, Diagnosis)
+        system = DIAGNOSE_SYSTEM + (static_block() if fewshot != "off" else "")
+        if fewshot == "teacher" and store is not None:
+            content.insert(1, {"type": "text", "text": teacher_block(store.corrections(item.skills if item else []))})
+        diag = llm.structured(system, [c for c in content if c.get("text", True)], Diagnosis)
         reasons = route(tp, checks, diag, key_match, item)
         recs = recommend(bank, diag, item, given)
         given.update(r.item_id for r in recs)

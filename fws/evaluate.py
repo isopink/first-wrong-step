@@ -22,7 +22,7 @@ def _rate(n: int, d: int) -> float | None:
     return round(n / d, 3) if d else None
 
 
-def run_labels(labels: Path, bank: Bank, model: str) -> dict:
+def run_labels(labels: Path, bank: Bank, model: str, fewshot: str = "teacher", store=None) -> dict:
     """labels.jsonl rows: {"image": path, "map": {"21": item_id}, "problems": {"21": {"first_wrong_step": 3|null, "error_type": "algebra"|null}}}"""
     llm = LLM(model=model)
     n = step_exact = step_near = verdict_ok = type_ok = type_n = false_correct = auto = auto_wrong = 0
@@ -30,7 +30,8 @@ def run_labels(labels: Path, bank: Bank, model: str) -> dict:
     sheets = 0
     rows = [json.loads(l) for l in labels.read_text(encoding="utf-8").splitlines() if l.strip()]
     for row in rows:
-        r = process_sheet(labels.parent / row["image"], "eval", bank, llm, row.get("map", {}), set(), log=lambda *_: None)
+        r = process_sheet(labels.parent / row["image"], "eval", bank, llm, row.get("map", {}), set(), log=lambda *_: None,
+                          fewshot=fewshot, store=store)
         sheets += 1
         cost += r.usage["cost_usd"]
         secs += r.seconds
@@ -59,7 +60,7 @@ def run_labels(labels: Path, bank: Bank, model: str) -> dict:
         "marked_correct_but_wrong": false_correct,
         "auto_share": _rate(auto, n), "wrong_sent_unreviewed": auto_wrong,
         "cost_usd_per_sheet": round(cost / sheets, 4) if sheets else None,
-        "seconds_per_sheet": round(secs / sheets, 1) if sheets else None, "model": model,
+        "seconds_per_sheet": round(secs / sheets, 1) if sheets else None, "model": model, "fewshot": fewshot,
     }
 
 
