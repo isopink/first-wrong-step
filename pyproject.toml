@@ -1,0 +1,27 @@
+[project]
+name = "first-wrong-step"
+version = "0.1.0"
+description = "Find the first wrong line in a photo of handwritten CSAT math work, give feedback, pick past-exam follow-ups."
+requires-python = ">=3.11"
+dependencies = [
+  "anthropic>=2.9",
+  "pydantic>=2.7",
+  "sympy>=1.13",
+  "antlr4-python3-runtime==4.11",
+  "pymupdf>=1.24",
+  "pillow>=10",
+  "pillow-heif>=0.16",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+fws = "fws.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["fws"]
